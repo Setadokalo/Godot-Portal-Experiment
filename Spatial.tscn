@@ -1,0 +1,315 @@
+[gd_scene load_steps=26 format=2]
+
+[ext_resource path="res://addons/sisilicon.shaders.extended-shader/ExtendedShader.gd" type="Script" id=1]
+[ext_resource path="res://PortalClipper.gd" type="Script" id=2]
+[ext_resource path="res://ClippableOwner.gd" type="Script" id=3]
+[ext_resource path="res://assets/entity/player/player.tscn" type="PackedScene" id=4]
+[ext_resource path="res://Portal.gd" type="Script" id=5]
+
+[sub_resource type="CubeMesh" id=3]
+
+[sub_resource type="Shader" id=4]
+code = "/**** INCLUDED FROM  \"res://addons/sisilicon.shaders.extended-shader/builtin_shaders/spatial_hedr.extshader\" ****/
+shader_type spatial;
+/**** END OF INCLUDE FROM  \"res://addons/sisilicon.shaders.extended-shader/builtin_shaders/spatial_hedr.extshader\" ****/
+render_mode blend_mix,depth_draw_opaque,cull_back,diffuse_burley,specular_schlick_ggx;
+uniform vec4 albedo : hint_color;
+uniform sampler2D texture_albedo : hint_albedo;
+uniform float specular;
+uniform float metallic;
+uniform float roughness : hint_range(0,1);
+uniform float point_size : hint_range(0,128);
+uniform vec3 uv1_scale;
+uniform vec3 uv1_offset;
+uniform vec3 uv2_scale;
+uniform vec3 uv2_offset;
+
+/**** INCLUDED FROM  \"res://shaders/clippable.extshader\" ****/
+/**** INCLUDED FROM  \"res://addons/sisilicon.shaders.extended-shader/builtin_shaders/spatial_hedr.extshader\" ****/
+/**** END OF INCLUDE FROM  \"res://addons/sisilicon.shaders.extended-shader/builtin_shaders/spatial_hedr.extshader\" ****/
+
+uniform vec3 plane_normal;
+uniform vec3 plane_pos;
+
+bool check_cull(vec3 pos) {
+	vec3 N = normalize(plane_normal);
+	vec3 P = plane_pos;
+	float D = -(N.x*P.x + N.y*P.y + N.z*P.z);
+	float distance = N.x * pos.x + N.y * pos.y + N.z * pos.z + D;
+	return distance > 0.0;
+}
+/**** END OF INCLUDE FROM  \"res://shaders/clippable.extshader\" ****/
+
+void vertex() {
+	UV=UV*uv1_scale.xy+uv1_offset.xy;
+}
+
+void fragment() {
+	vec3 pos = (CAMERA_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	if (check_cull(pos)) discard;
+	vec2 base_uv = UV;
+	vec4 albedo_tex = texture(texture_albedo,base_uv);
+	ALBEDO = albedo.rgb * albedo_tex.rgb;
+	METALLIC = metallic;
+	ROUGHNESS = roughness;
+	SPECULAR = specular;
+}
+"
+script = ExtResource( 1 )
+defines = {
+}
+raw_code = "#include <\"spatial_hedr\">
+render_mode blend_mix,depth_draw_opaque,cull_back,diffuse_burley,specular_schlick_ggx;
+uniform vec4 albedo : hint_color;
+uniform sampler2D texture_albedo : hint_albedo;
+uniform float specular;
+uniform float metallic;
+uniform float roughness : hint_range(0,1);
+uniform float point_size : hint_range(0,128);
+uniform vec3 uv1_scale;
+uniform vec3 uv1_offset;
+uniform vec3 uv2_scale;
+uniform vec3 uv2_offset;
+
+#include \"res://shaders/clippable\"
+
+void vertex() {
+	UV=UV*uv1_scale.xy+uv1_offset.xy;
+}
+
+void fragment() {
+	vec3 pos = (CAMERA_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	if (check_cull(pos)) discard;
+	vec2 base_uv = UV;
+	vec4 albedo_tex = texture(texture_albedo,base_uv);
+	ALBEDO = albedo.rgb * albedo_tex.rgb;
+	METALLIC = metallic;
+	ROUGHNESS = roughness;
+	SPECULAR = specular;
+}
+"
+
+[sub_resource type="ShaderMaterial" id=5]
+shader = SubResource( 4 )
+shader_param/albedo = Color( 0.231373, 0.231373, 0.231373, 1 )
+shader_param/specular = null
+shader_param/metallic = null
+shader_param/roughness = 0.41
+shader_param/point_size = null
+shader_param/uv1_scale = null
+shader_param/uv1_offset = null
+shader_param/uv2_scale = null
+shader_param/uv2_offset = null
+shader_param/plane_normal = Vector3( 0, 0, 0 )
+shader_param/plane_pos = Vector3( -1.16824, 0.780229, -1.7214 )
+
+[sub_resource type="BoxShape" id=6]
+
+[sub_resource type="BoxShape" id=7]
+extents = Vector3( 50, 1, 50 )
+
+[sub_resource type="CubeMesh" id=8]
+size = Vector3( 100, 2, 100 )
+
+[sub_resource type="CubeMesh" id=1]
+size = Vector3( 3, 6, 0.05 )
+
+[sub_resource type="Shader" id=10]
+code = "/**** INCLUDED FROM  \"res://addons/sisilicon.shaders.extended-shader/builtin_shaders/spatial_hedr.extshader\" ****/
+shader_type spatial;
+/**** END OF INCLUDE FROM  \"res://addons/sisilicon.shaders.extended-shader/builtin_shaders/spatial_hedr.extshader\" ****/
+render_mode unshaded, cull_disabled;
+
+uniform sampler2D viewport_tex;
+
+void fragment() {
+	ALBEDO = texture(viewport_tex, SCREEN_UV).rgb * 1.5;
+}
+"
+script = ExtResource( 1 )
+defines = {
+}
+raw_code = "#include <\"spatial_hedr\">
+render_mode unshaded, cull_disabled;
+
+uniform sampler2D viewport_tex;
+
+void fragment() {
+	ALBEDO = texture(viewport_tex, SCREEN_UV).rgb * 1.5;
+}"
+
+[sub_resource type="Gradient" id=14]
+colors = PoolColorArray( 0.832031, 0.185257, 0.185257, 1, 1, 1, 1, 1 )
+
+[sub_resource type="GradientTexture" id=15]
+gradient = SubResource( 14 )
+
+[sub_resource type="ShaderMaterial" id=12]
+resource_local_to_scene = true
+shader = SubResource( 10 )
+shader_param/viewport_tex = SubResource( 15 )
+
+[sub_resource type="BoxShape" id=2]
+extents = Vector3( 1.52128, 3.06847, 0.217599 )
+
+[sub_resource type="BoxShape" id=9]
+extents = Vector3( 0.05, 3, 0.05 )
+
+[sub_resource type="CylinderMesh" id=16]
+top_radius = 0.027
+bottom_radius = 0.805
+height = 0.785
+radial_segments = 4
+
+[sub_resource type="SpatialMaterial" id=17]
+albedo_color = Color( 1, 0.121569, 0.121569, 1 )
+
+[sub_resource type="SphereMesh" id=18]
+radius = 0.25
+height = 0.5
+
+[sub_resource type="SpatialMaterial" id=19]
+flags_unshaded = true
+albedo_color = Color( 1, 0.0196078, 0.0196078, 1 )
+
+[sub_resource type="ShaderMaterial" id=13]
+resource_local_to_scene = true
+shader = SubResource( 10 )
+
+[sub_resource type="SpatialMaterial" id=20]
+albedo_color = Color( 0.0705882, 0.301961, 0.996078, 1 )
+
+[sub_resource type="SpatialMaterial" id=21]
+flags_unshaded = true
+albedo_color = Color( 0.0196078, 0.266667, 1, 1 )
+
+[node name="Spatial" type="Spatial"]
+
+[node name="RigidBody" type="RigidBody" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45905, 0.614069, 2.03633 )
+script = ExtResource( 3 )
+clippable_mesh_children = [ NodePath("PortalTest") ]
+
+[node name="PortalTest" type="MeshInstance" parent="RigidBody"]
+mesh = SubResource( 3 )
+material/0 = SubResource( 5 )
+
+[node name="CollisionShape" type="CollisionShape" parent="RigidBody"]
+shape = SubResource( 6 )
+
+[node name="StaticBody" type="StaticBody" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -3.42573, 0 )
+
+[node name="CollisionShape" type="CollisionShape" parent="StaticBody"]
+shape = SubResource( 7 )
+
+[node name="MeshInstance" type="MeshInstance" parent="StaticBody"]
+mesh = SubResource( 8 )
+material/0 = null
+
+[node name="player" parent="." instance=ExtResource( 4 )]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -2.70888, -1.5414, 2.39732 )
+
+[node name="Portal1" type="StaticBody" parent="."]
+transform = Transform( 0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, 0, 0.6, 0 )
+script = ExtResource( 5 )
+OtherPortal = NodePath("../Portal2")
+
+[node name="MeshInstance" type="MeshInstance" parent="Portal1"]
+layers = 8192
+mesh = SubResource( 1 )
+material/0 = SubResource( 12 )
+
+[node name="PortalPositionMagic" type="Position3D" parent="Portal1/MeshInstance"]
+script = ExtResource( 2 )
+
+[node name="Area" type="Area" parent="Portal1/MeshInstance"]
+
+[node name="CollisionShape" type="CollisionShape" parent="Portal1/MeshInstance/Area"]
+shape = SubResource( 2 )
+
+[node name="CollisionShape" type="CollisionShape" parent="Portal1"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0, 0 )
+shape = SubResource( 9 )
+
+[node name="CollisionShape_2" type="CollisionShape" parent="Portal1"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, 0 )
+shape = SubResource( 9 )
+
+[node name="Viewport" type="Viewport" parent="Portal1"]
+size = Vector2( 1000, 1000 )
+keep_3d_linear = true
+render_target_v_flip = true
+
+[node name="Camera" type="Camera" parent="Portal1/Viewport"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 1.821, 0.736, 12.733 )
+cull_mask = 516095
+current = true
+
+[node name="MeshInstance" type="MeshInstance" parent="Portal1/Viewport/Camera"]
+transform = Transform( 0.707107, 3.09086e-08, 0.707107, 0.707107, -3.09086e-08, -0.707107, 0, 1, -4.37114e-08, 0, 0, -0.419034 )
+layers = 524288
+mesh = SubResource( 16 )
+material/0 = SubResource( 17 )
+
+[node name="Dummy" type="Spatial" parent="Portal1"]
+transform = Transform( -0.844487, 0, -0.535576, 0, 1, 0, 0.535576, 0, -0.844487, 5.86476, 0, 4.97807 )
+
+[node name="MeshInstance_2" type="MeshInstance" parent="Portal1"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.48346, 0 )
+mesh = SubResource( 18 )
+material/0 = SubResource( 19 )
+
+[node name="Portal2" type="StaticBody" parent="."]
+transform = Transform( 0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866025, 5.86476, 0.6, 0.286985 )
+script = ExtResource( 5 )
+OtherPortal = NodePath("../Portal1")
+
+[node name="MeshInstance" type="MeshInstance" parent="Portal2"]
+layers = 4096
+mesh = SubResource( 1 )
+material/0 = SubResource( 13 )
+
+[node name="PortalPositionMagic" type="Position3D" parent="Portal2/MeshInstance"]
+script = ExtResource( 2 )
+
+[node name="Area" type="Area" parent="Portal2/MeshInstance"]
+
+[node name="CollisionShape" type="CollisionShape" parent="Portal2/MeshInstance/Area"]
+shape = SubResource( 2 )
+
+[node name="CollisionShape" type="CollisionShape" parent="Portal2"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0, 0 )
+shape = SubResource( 9 )
+
+[node name="CollisionShape_2" type="CollisionShape" parent="Portal2"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, 0 )
+shape = SubResource( 9 )
+
+[node name="Viewport" type="Viewport" parent="Portal2"]
+size = Vector2( 1000, 1000 )
+keep_3d_linear = true
+render_target_v_flip = true
+
+[node name="Camera" type="Camera" parent="Portal2/Viewport"]
+transform = Transform( 0.998761, 0, -0.0497737, 0.0183706, 0.929397, 0.368624, 0.0462595, -0.369082, 0.928245, 3.387, 1.422, 14.847 )
+cull_mask = 520191
+current = true
+
+[node name="MeshInstance_2" type="MeshInstance" parent="Portal2/Viewport/Camera"]
+transform = Transform( 0.707107, 1.28028e-08, 0.707107, 0.707107, -3.09086e-08, -0.707107, 1.28028e-08, 1, -3.09086e-08, 0, 0, -0.419 )
+layers = 524288
+mesh = SubResource( 16 )
+material/0 = SubResource( 20 )
+
+[node name="Dummy" type="Spatial" parent="Portal2"]
+
+[node name="MeshInstance_3" type="MeshInstance" parent="Portal2"]
+transform = Transform( -0.844487, 0, 0.535576, 0, 1, 0, -0.535576, 0, -0.844487, 0, 3.527, 0 )
+mesh = SubResource( 18 )
+material/0 = SubResource( 21 )
+
+[connection signal="body_entered" from="Portal1/MeshInstance/Area" to="Portal1/MeshInstance/PortalPositionMagic" method="_on_Area_body_entered"]
+[connection signal="body_exited" from="Portal1/MeshInstance/Area" to="Portal1/MeshInstance/PortalPositionMagic" method="_on_Area_body_exited"]
+[connection signal="body_entered" from="Portal2/MeshInstance/Area" to="Portal2/MeshInstance/PortalPositionMagic" method="_on_Area_body_entered"]
+[connection signal="body_exited" from="Portal2/MeshInstance/Area" to="Portal2/MeshInstance/PortalPositionMagic" method="_on_Area_body_exited"]

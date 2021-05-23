@@ -1,0 +1,421 @@
+[gd_scene load_steps=15 format=2]
+
+[ext_resource path="res://addons/sisilicon.shaders.extended-shader/ExtendedShader.gd" type="Script" id=1]
+[ext_resource path="res://assets/entity/player/player.tscn" type="PackedScene" id=2]
+[ext_resource path="res://assets/terrain/terrain-2/Material_001.material" type="Material" id=3]
+[ext_resource path="res://Area.gd" type="Script" id=4]
+[ext_resource path="res://untitled.glb" type="PackedScene" id=5]
+
+[sub_resource type="CubeMesh" id=1]
+material = ExtResource( 3 )
+size = Vector3( 640, 2, 640 )
+
+[sub_resource type="BoxShape" id=2]
+extents = Vector3( 320, 1, 320 )
+
+[sub_resource type="CubeMesh" id=3]
+material = ExtResource( 3 )
+size = Vector3( 64, 2, 64 )
+
+[sub_resource type="BoxShape" id=4]
+extents = Vector3( 32, 1, 32 )
+
+[sub_resource type="CubeMesh" id=5]
+size = Vector3( 20000, 1000, 20000 )
+
+[sub_resource type="Shader" id=6]
+code = "/**** INCLUDED FROM  \"res://addons/sisilicon.shaders.extended-shader/builtin_shaders/spatial_hedr.extshader\" ****/
+shader_type spatial;
+/**** END OF INCLUDE FROM  \"res://addons/sisilicon.shaders.extended-shader/builtin_shaders/spatial_hedr.extshader\" ****/
+render_mode blend_mix, cull_disabled, depth_draw_always, unshaded;
+
+/**** INCLUDED FROM  \"res://addons/sisilicon.shaders.extended-shader/builtin_shaders/noise/classic_perlin3d.extshader\" ****/
+/**** INCLUDED FROM  \"res://addons/sisilicon.shaders.extended-shader/builtin_shaders/canvas_hedr.extshader\" ****/
+/**** END OF INCLUDE FROM  \"res://addons/sisilicon.shaders.extended-shader/builtin_shaders/canvas_hedr.extshader\" ****/
+
+
+// GLSL textureless classic 3D noise \\\"cnoise\\\",
+// with an RSL-style periodic variant \\\"pnoise\\\".
+// Author:  Stefan Gustavson (stefan.gustavson@liu.se)
+// Version: 2011-10-11
+//
+// Many thanks to Ian McEwan of Ashima Arts for the
+// ideas for permutation and gradient selection.
+//
+// Copyright (c) 2011 Stefan Gustavson. All rights reserved.
+// Distributed under the MIT license. See LICENSE file.
+// https://github.com/stegu/webgl-noise
+//
+
+/**** INCLUDED FROM  \"res://addons/sisilicon.shaders.extended-shader/builtin_shaders/noise/mathlib.extshader\" ****/
+/**** INCLUDED FROM  \"res://addons/sisilicon.shaders.extended-shader/builtin_shaders/canvas_hedr.extshader\" ****/
+/**** END OF INCLUDE FROM  \"res://addons/sisilicon.shaders.extended-shader/builtin_shaders/canvas_hedr.extshader\" ****/
+
+// Modulo 289 without a division (only multiplications)
+vec4 mod289_4(vec4 x) {
+  return x - floor(x * (1.0 / 289.0)) * 289.0;
+}
+
+vec3 mod289_3(vec3 x) {
+    return x - floor(x * (1.0 / 289.0)) * 289.0;
+}
+
+vec2 mod289_2(vec2 x) {
+    return x - floor(x * (1.0 / 289.0)) * 289.0;
+}
+
+float mod289(float x) {
+    return x - floor(x * (1.0 / 289.0)) * 289.0;
+}
+
+// Modulo 7 without a division
+vec3 mod7_3(vec3 x) {
+    return x - floor(x * (1.0 / 7.0)) * 7.0;
+}
+
+vec4 mod7_4(vec4 x) {
+  return x - floor(x * (1.0 / 7.0)) * 7.0;
+}
+
+float permute(float x) {
+    return mod289(((x * 34.0) + 1.0) * x);
+}
+
+// Permutation polynomial: (34x^2 + x) mod 289
+vec3 permute_3(vec3 x) {
+    return mod289_3((34.0 * x + 1.0) * x);
+}
+
+// Permutation polynomial: (34x^2 + x) mod 289
+vec4 permute_4(vec4 x) {
+  return mod289_4((34.0 * x + 1.0) * x);
+}
+
+vec4 taylorInvSqrt_4(vec4 r) {
+    return 1.79284291400159 - 0.85373472095314 * r;
+}
+
+float taylorInvSqrt(float r) {
+    return 2.79284291400159 - 1.85373472095314 * r;
+}
+
+vec2 fade_2(vec2 t) {
+    return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+}
+
+vec3 fade_3(vec3 t) {
+    return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+}
+
+vec4 fade_4(vec4 t) {
+	return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+}
+
+/**** END OF INCLUDE FROM  \"res://addons/sisilicon.shaders.extended-shader/builtin_shaders/noise/mathlib.extshader\" ****/
+
+// Classic Perlin noise
+float cnoise3d(vec3 P) {
+    vec3 Pi0 = floor(P); // Integer part for indexing
+    vec3 Pi1 = Pi0 + vec3(1.0); // Integer part + 1
+    Pi0 = mod289_3(Pi0);
+    Pi1 = mod289_3(Pi1);
+    vec3 Pf0 = fract(P); // Fractional part for interpolation
+    vec3 Pf1 = Pf0 - vec3(1.0); // Fractional part - 1.0
+    vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
+    vec4 iy = vec4(Pi0.yy, Pi1.yy);
+    vec4 iz0 = vec4(Pi0.z);
+    vec4 iz1 = vec4(Pi1.z);
+    
+    vec4 ixy = permute_4(permute_4(ix) + iy);
+    vec4 ixy0 = permute_4(ixy + iz0);
+    vec4 ixy1 = permute_4(ixy + iz1);
+    
+    vec4 gx0 = ixy0 * (1.0 / 7.0);
+    vec4 gy0 = fract(floor(gx0) * (1.0 / 7.0)) - 0.5;
+    gx0 = fract(gx0);
+    vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);
+    vec4 sz0 = step(gz0, vec4(0.0));
+    gx0 -= sz0 * (step(0.0, gx0) - 0.5);
+    gy0 -= sz0 * (step(0.0, gy0) - 0.5);
+    
+    vec4 gx1 = ixy1 * (1.0 / 7.0);
+    vec4 gy1 = fract(floor(gx1) * (1.0 / 7.0)) - 0.5;
+    gx1 = fract(gx1);
+    vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);
+    vec4 sz1 = step(gz1, vec4(0.0));
+    gx1 -= sz1 * (step(0.0, gx1) - 0.5);
+    gy1 -= sz1 * (step(0.0, gy1) - 0.5);
+    
+    vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);
+    vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);
+    vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);
+    vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);
+    vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);
+    vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);
+    vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);
+    vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);
+    
+    vec4 norm0 = taylorInvSqrt_4(vec4(dot(g000, g000), dot(g010, g010), dot(g100, g100), dot(g110, g110)));
+    g000 *= norm0.x;
+    g010 *= norm0.y;
+    g100 *= norm0.z;
+    g110 *= norm0.w;
+    vec4 norm1 = taylorInvSqrt_4(vec4(dot(g001, g001), dot(g011, g011), dot(g101, g101), dot(g111, g111)));
+    g001 *= norm1.x;
+    g011 *= norm1.y;
+    g101 *= norm1.z;
+    g111 *= norm1.w;
+    
+    float n000 = dot(g000, Pf0);
+    float n100 = dot(g100, vec3(Pf1.x, Pf0.yz));
+    float n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));
+    float n110 = dot(g110, vec3(Pf1.xy, Pf0.z));
+    float n001 = dot(g001, vec3(Pf0.xy, Pf1.z));
+    float n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));
+    float n011 = dot(g011, vec3(Pf0.x, Pf1.yz));
+    float n111 = dot(g111, Pf1);
+    
+    vec3 fade_xyz = fade_3(Pf0);
+    vec4 n_z = mix(vec4(n000, n100, n010, n110), vec4(n001, n101, n011, n111), fade_xyz.z);
+    vec2 n_yz = mix(n_z.xy, n_z.zw, fade_xyz.y);
+    float n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x); 
+    return 2.2 * n_xyz;
+}
+
+// Classic Perlin noise, periodic variant
+float pnoise_3(vec3 P, vec3 rep) {
+    vec3 Pi0 = mod(floor(P), rep); // Integer part, modulo period
+    vec3 Pi1 = mod(Pi0 + vec3(1.0), rep); // Integer part + 1, mod period
+    Pi0 = mod289_3(Pi0);
+    Pi1 = mod289_3(Pi1);
+    vec3 Pf0 = fract(P); // Fractional part for interpolation
+    vec3 Pf1 = Pf0 - vec3(1.0); // Fractional part - 1.0
+    vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
+    vec4 iy = vec4(Pi0.yy, Pi1.yy);
+    vec4 iz0 = vec4(Pi0.z);
+    vec4 iz1 = vec4(Pi1.z);
+    
+    vec4 ixy = permute_4(permute_4(ix) + iy);
+    vec4 ixy0 = permute_4(ixy + iz0);
+    vec4 ixy1 = permute_4(ixy + iz1);
+    
+    vec4 gx0 = ixy0 * (1.0 / 7.0);
+    vec4 gy0 = fract(floor(gx0) * (1.0 / 7.0)) - 0.5;
+    gx0 = fract(gx0);
+    vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);
+    vec4 sz0 = step(gz0, vec4(0.0));
+    gx0 -= sz0 * (step(0.0, gx0) - 0.5);
+    gy0 -= sz0 * (step(0.0, gy0) - 0.5);
+    
+    vec4 gx1 = ixy1 * (1.0 / 7.0);
+    vec4 gy1 = fract(floor(gx1) * (1.0 / 7.0)) - 0.5;
+    gx1 = fract(gx1);
+    vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);
+    vec4 sz1 = step(gz1, vec4(0.0));
+    gx1 -= sz1 * (step(0.0, gx1) - 0.5);
+    gy1 -= sz1 * (step(0.0, gy1) - 0.5);
+    
+    vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);
+    vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);
+    vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);
+    vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);
+    vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);
+    vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);
+    vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);
+    vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);
+    
+    vec4 norm0 = taylorInvSqrt_4(vec4(dot(g000, g000), dot(g010, g010), dot(g100, g100), dot(g110, g110)));
+    g000 *= norm0.x;
+    g010 *= norm0.y;
+    g100 *= norm0.z;
+    g110 *= norm0.w;
+    vec4 norm1 = taylorInvSqrt_4(vec4(dot(g001, g001), dot(g011, g011), dot(g101, g101), dot(g111, g111)));
+    g001 *= norm1.x;
+    g011 *= norm1.y;
+    g101 *= norm1.z;
+    g111 *= norm1.w;
+    
+    float n000 = dot(g000, Pf0);
+    float n100 = dot(g100, vec3(Pf1.x, Pf0.yz));
+    float n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));
+    float n110 = dot(g110, vec3(Pf1.xy, Pf0.z));
+    float n001 = dot(g001, vec3(Pf0.xy, Pf1.z));
+    float n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));
+    float n011 = dot(g011, vec3(Pf0.x, Pf1.yz));
+    float n111 = dot(g111, Pf1);
+    
+    vec3 fade_xyz = fade_3(Pf0);
+    vec4 n_z = mix(vec4(n000, n100, n010, n110), vec4(n001, n101, n011, n111), fade_xyz.z);
+    vec2 n_yz = mix(n_z.xy, n_z.zw, fade_xyz.y);
+    float n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x); 
+    return 2.2 * n_xyz;
+}
+
+/**** END OF INCLUDE FROM  \"res://addons/sisilicon.shaders.extended-shader/builtin_shaders/noise/classic_perlin3d.extshader\" ****/
+/**** INCLUDED FROM  \"res://addons/sisilicon.shaders.extended-shader/builtin_shaders/math.extshader\" ****/
+/**** INCLUDED FROM  \"res://addons/sisilicon.shaders.extended-shader/builtin_shaders/canvas_hedr.extshader\" ****/
+/**** END OF INCLUDE FROM  \"res://addons/sisilicon.shaders.extended-shader/builtin_shaders/canvas_hedr.extshader\" ****/
+float remapf(float val, float current_min, float current_max, float new_min, float new_max) {
+	return (val - current_min) / (current_max - current_min) * (new_max - new_min) + new_min;
+}
+/**** END OF INCLUDE FROM  \"res://addons/sisilicon.shaders.extended-shader/builtin_shaders/math.extshader\" ****/
+
+
+float octavesample(vec3 pos) {
+	return cnoise3d(pos) + cnoise3d(pos * 4.0) * 0.5 + cnoise3d(pos * 8.0) * 0.25 + cnoise3d(pos * 16.0) * 0.125;
+}
+
+void fragment() {
+	vec3 pos = (CAMERA_MATRIX * vec4(VERTEX, 1.0)).xyz / 160.0;
+	vec3 normal = (CAMERA_MATRIX * vec4(NORMAL, 0.0)).xyz;
+	vec3 samplepos = pos + normal * TIME / 4.0;
+	ALPHA = remapf(octavesample(samplepos), 0.0, 2.0, 0.0, 1.0);
+	ALBEDO = vec3(0.01);
+}
+"
+script = ExtResource( 1 )
+defines = {
+}
+raw_code = "#include <\"spatial_hedr\">
+render_mode blend_mix, cull_disabled, depth_draw_always, unshaded;
+
+#include <\"noise/classic_perlin3d\">
+#include <\"math\">
+
+
+float octavesample(vec3 pos) {
+	return cnoise3d(pos) + cnoise3d(pos * 4.0) * 0.5 + cnoise3d(pos * 8.0) * 0.25 + cnoise3d(pos * 16.0) * 0.125;
+}
+
+void fragment() {
+	vec3 pos = (CAMERA_MATRIX * vec4(VERTEX, 1.0)).xyz / 160.0;
+	vec3 normal = (CAMERA_MATRIX * vec4(NORMAL, 0.0)).xyz;
+	vec3 samplepos = pos + normal * TIME / 4.0;
+	ALPHA = remapf(octavesample(samplepos), 0.0, 2.0, 0.0, 1.0);
+	ALBEDO = vec3(0.01);
+}"
+
+[sub_resource type="ShaderMaterial" id=7]
+shader = SubResource( 6 )
+
+[sub_resource type="BoxShape" id=8]
+extents = Vector3( 10000, 500, 10000 )
+
+[sub_resource type="SphereMesh" id=9]
+height = 2.225
+radial_segments = 32
+rings = 16
+
+[node name="Spatial" type="Spatial"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -7.52464, 0 )
+
+[node name="StaticBody" type="StaticBody" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -260.715, 141.3, -222.733 )
+
+[node name="MeshInstance" type="MeshInstance" parent="StaticBody"]
+mesh = SubResource( 1 )
+material/0 = null
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="CollisionShape" type="CollisionShape" parent="StaticBody"]
+shape = SubResource( 2 )
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="StaticBody_2" type="StaticBody" parent="."]
+transform = Transform( 1, 0, 0, 0, 0.966052, 0.258347, 0, -0.258347, 0.966052, -222.931, 149.072, -222.733 )
+
+[node name="MeshInstance" type="MeshInstance" parent="StaticBody_2"]
+mesh = SubResource( 3 )
+material/0 = null
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="CollisionShape" type="CollisionShape" parent="StaticBody_2"]
+shape = SubResource( 4 )
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="StaticBody_3" type="StaticBody" parent="."]
+transform = Transform( 1, 0, 0, 0, 0.904165, 0.427184, 0, -0.427184, 0.904165, -289.435, 154.682, -222.733 )
+
+[node name="MeshInstance" type="MeshInstance" parent="StaticBody_3"]
+mesh = SubResource( 3 )
+material/0 = null
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="CollisionShape" type="CollisionShape" parent="StaticBody_3"]
+shape = SubResource( 4 )
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="StaticBody_4" type="StaticBody" parent="."]
+transform = Transform( 1, 0, 0, 0, 0.76095, 0.648811, 0, -0.648811, 0.76095, -363.442, 162.103, -222.733 )
+
+[node name="MeshInstance" type="MeshInstance" parent="StaticBody_4"]
+mesh = SubResource( 3 )
+material/0 = null
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="CollisionShape" type="CollisionShape" parent="StaticBody_4"]
+shape = SubResource( 4 )
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="DirectionalLight" type="DirectionalLight" parent="."]
+transform = Transform( 0.715485, -0.276921, 0.641401, 0, 0.918087, 0.396379, -0.698628, -0.283603, 0.656878, 521.132, 642.417, 517.055 )
+light_energy = 7.2
+shadow_enabled = true
+directional_shadow_blend_splits = true
+directional_shadow_normal_bias = 2.64
+directional_shadow_max_distance = 600.0
+
+[node name="player" parent="." instance=ExtResource( 2 )]
+transform = Transform( -1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, -232, 143.338, -266 )
+
+[node name="PlayerSpawnPoint" type="Position3D" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -232, 143.388, -266 )
+
+[node name="Area" type="Area" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -242.666, -503.926, -273.525 )
+script = ExtResource( 4 )
+
+[node name="MeshInstance" type="MeshInstance" parent="Area"]
+mesh = SubResource( 5 )
+material/0 = SubResource( 7 )
+
+[node name="CollisionShape" type="CollisionShape" parent="Area"]
+shape = SubResource( 8 )
+
+[node name="MeshInstance_2" type="MeshInstance" parent="Area"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 709, 0 )
+material_override = SubResource( 7 )
+mesh = SubResource( 9 )
+material/0 = null
+
+[node name="untitled" parent="Area" instance=ExtResource( 5 )]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 3.20027, 707.807, -4.07697 )
+
+[node name="Projection" type="Camera" parent="."]
+transform = Transform( -0.506275, 0, 0.862372, 0, 1, 0, -0.862372, 0, -0.506275, -185.748, 143.46, -253.842 )
+visible = false
+fov = 65.7
+
+[node name="Frustrum" type="Camera" parent="."]
+transform = Transform( -4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -185.748, 143.46, -253.842 )
+projection = 2
+size = 0.1
+frustum_offset = Vector2( -0.677, 0.001 )
+
+[connection signal="body_entered" from="Area" to="Area" method="_on_body_entered"]
